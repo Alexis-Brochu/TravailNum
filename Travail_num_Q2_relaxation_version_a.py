@@ -105,7 +105,7 @@ def Relaxation_simple(V_actuel, Matrice_CF) :
     M_Vactuel_bas = V_actuel[1:-1,2:]
 
     #TODO utiliser vraie mathématique avec facteur cylindrique
-    V_nouveaux = (M_Vactuel_gauche + M_Vactuel_droite + M_Vactuel_haut + M_Vactuel_bas) / 4
+    V_nouveaux = ((M_Vactuel_gauche + M_Vactuel_droite + M_Vactuel_haut + M_Vactuel_bas) / 4 ) + (h/8) * (M_Vactuel_gauche + M_Vactuel_droite)
 
     #Écrasement du centre de la matrice
     V_actuel[1:-1,1:-1] = V_nouveaux
