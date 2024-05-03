@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-
 #Nous travaillerons toujours en m, le tout sera transformé en mm lors de l'affichage
 #des figures
 
@@ -73,23 +72,28 @@ def Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF) :
     """Cette fonction crée la première matrice numpy 2D du potentiel actuel,
     Les valeurs de potentiel en tout point est mise"""
 
-    ###Commence tout à 0
-    V_debut = np.ones_like(Matrice_monde) * 0
+    ###Commence tout à -150, valeur de départ optimisée
+    V_debut = np.ones_like(Matrice_monde) * -150
     ###Applique condition frontières
     V_debut[mask_CF] = Matrice_CF[mask_CF]
 
     return V_debut
 
-def Relaxation_simple(V_actuel, Matrice_CF, mask_CF) :
+def Relaxation_simple(V_actuel, Matrice_CF, mask_CF, w,indice_change=False) :
     """Cette fonction effectue une étape de Relaxation et retourne la nouvelle
     matrice du potentiel actuel et un indice du changements effectuté"""
+    #w est le facteur
 
     ###Nous prenons une sous-partie de la matrice actuelle pour pouvoir 
     ###faire la moyenne en tout point gauche, droite, haut, bas
     ###(pas vraiment tout point, les bordures ne sont jamais changé)
 
-    moyenne_init = np.average(V_actuel)
-    
+    if indice_change:
+        moyenne_init = np.average(V_actuel)
+
+    #Changement de la ligne à r=0 avec l'équation 1b)
+    V_actuel[0,1:-1] = (1+w)*0.5*(V_actuel[0,0:-2]+V_actuel[0,2:]) - w * V_actuel[0,1:-1]
+
     M_Vactuel_Rbas = V_actuel[:-2,1:-1]
     M_Vactuel_Rhaut = V_actuel[2:,1:-1]
     M_Vactuel_Zbas = V_actuel[1:-1,:-2]
@@ -99,17 +103,15 @@ def Relaxation_simple(V_actuel, Matrice_CF, mask_CF) :
     V_nouveaux = ((M_Vactuel_Rbas + M_Vactuel_Rhaut + M_Vactuel_Zbas + M_Vactuel_Zhaut) / 4 ) + (h/8) * (M_Vactuel_Rbas + M_Vactuel_Rhaut)
 
     #Écrasement du centre de la matrice
-    V_actuel[1:-1,1:-1] = V_nouveaux
-
-    #Changement de la ligne à r=0 avec l'équation 1b)
-    V_actuel[0,1:-1] = 0.5 * (V_actuel[0,0:-2]+V_actuel[0,2:])
+    V_actuel[1:-1,1:-1] = (1+w)*V_nouveaux - w*V_actuel[1:-1,1:-1]
 
     #Replacemnt des condtions frontières
     V_actuel[mask_CF] = Matrice_CF[mask_CF]
 
-    Indice_changement = moyenne_init - np.average(V_actuel)
-
-    return V_actuel, Indice_changement
+    if indice_change:
+        Indice_changement = moyenne_init - np.average(V_actuel)
+        return V_actuel, Indice_changement
+    return V_actuel, False
 
 
 def affichage_de_matrice(Matrice_V, nom_fichier=False, mask_actif=False) :
@@ -153,41 +155,42 @@ def affichage_de_matrice(Matrice_V, nom_fichier=False, mask_actif=False) :
     plt.savefig('Potentiel_Relaxation_2_a.png', dpi=600)
     plt.show()
 
+
 ###Operations###
 
-Matrice_CF = Construire_Matrice_CF(Matrice_monde)
-mask_CF = ~np.isnan(Matrice_CF)
+temps_necessaire = []
+iterations_necessaire = []
+for j in range(100):
+    start_time = time.time()    #Commence chronomètre
+    Matrice_CF = Construire_Matrice_CF(Matrice_monde)
+    mask_CF = ~np.isnan(Matrice_CF)
 
-V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF)
+    V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF)
+    i=0
+    while True:
+        if i % 5 == 0:
+            #Valeur de sur-relaxtion 0.002
+            V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF, 0.002, indice_change=True)
+            if Indice_changement_i < 10**(-12) or i > 15000:
+                break
+        else:
+            #Valeur de sur-relaxtion 0.002
+            V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF, 0.002)
+        i+=1
+    ### On arrête le temps 
+    temps_necessaire.append(time.time() - start_time)
+    iterations_necessaire.append(i)
+    print(j)
 
-Indice_changement = []
-iterations = []
+###Calculs de temps et d'itération 
+temps_necessaire = np.array(temps_necessaire)
+iterations_necessaire = np.array(iterations_necessaire)
 
-i=0
-while True:
-    V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF)
-    Indice_changement.append(Indice_changement_i)
-    iterations.append(i)
-
-    if Indice_changement_i < 10**(-12) or i > 15000:
-        break
-    i+=1
-
-### On arrête le temps 
-print("Programme executé en --- %s seconds ---" % (time.time() - start_time))
-print(f"Nombre d'itérations {iterations[-1]}")
+#Valeurs finales
+print(f"Avec l'ordinateur utilisé le temps necessaire est de")
+print(f"{np.average(temps_necessaire)} +- {2*np.std(temps_necessaire)} sec.")
+print(f"Avec l'ordinateur utilisé le nombre d'itérations est de")
+print(f"{np.average(iterations_necessaire)} +- {2*np.std(iterations_necessaire)}")
 
 ###On affiche la figure final
 affichage_de_matrice(V_actuel, nom_fichier="nom_de_figure", mask_actif = True)
-
-###Affichage de la figure pour c)
-fig = plt.figure(figsize=(8, 3))
-plt.subplots_adjust(left=0.1, right=0.98, top=1, bottom=0.16, wspace=0.2, hspace=0.2)
-plt.plot(
-    iterations,Indice_changement
-)
-plt.xlabel("Nombre d'itérations [-]")
-plt.ylabel("Variation de la moyenne [V]")
-plt.yscale("log")
-plt.savefig("Graphique_condition_arret",dpi=600)
-plt.show()

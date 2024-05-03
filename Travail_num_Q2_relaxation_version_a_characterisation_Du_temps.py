@@ -5,7 +5,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import fonctions_utiles as fu
 import time
 
 ####ATTENTION, CE FICHIER CALCULE PLUSIEURS FOIS LA MEME NUMERO
@@ -175,13 +174,14 @@ for j in range(100):
         Indice_changement.append(Indice_changement_i)
         iterations.append(i)
 
-        if Indice_changement_i == 0 or i > 15000:
+        if Indice_changement_i < 10**(-12) or i > 15000:
             break
         i+=1
 
     ### On arrête le temps 
     temps_necessaire.append(time.time() - start_time)
     iterations_necessaire.append(i)
+    print(j)
 
 ###Calculs de temps et d'itération 
 temps_necessaire = np.array(temps_necessaire)
