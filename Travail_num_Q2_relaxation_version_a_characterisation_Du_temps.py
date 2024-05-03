@@ -5,14 +5,16 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import fonctions_utiles as fu
 import time
 
+####ATTENTION, CE FICHIER CALCULE PLUSIEURS FOIS LA MEME NUMERO
+####NOUS VOLUONS CHARACTERISER LE TEMPS pour arriver à une réponse
 
 #Nous travaillerons toujours en m, le tout sera transformé en mm lors de l'affichage
 #des figures
 
 #INITIALISATION
-start_time = time.time()    #Commence chronomètre
 h = 0.0001   #agit comme ''Résolution'' de relaxation 
 
 #Création du ''monde''
@@ -90,13 +92,13 @@ def Relaxation_simple(V_actuel, Matrice_CF, mask_CF) :
 
     moyenne_init = np.average(V_actuel)
     
-    M_Vactuel_Rbas = V_actuel[:-2,1:-1]
-    M_Vactuel_Rhaut = V_actuel[2:,1:-1]
-    M_Vactuel_Zbas = V_actuel[1:-1,:-2]
-    M_Vactuel_Zhaut = V_actuel[1:-1,2:]
+    M_Vactuel_gauche = V_actuel[:-2,1:-1]
+    M_Vactuel_droite = V_actuel[2:,1:-1]
+    M_Vactuel_haut = V_actuel[1:-1,:-2]
+    M_Vactuel_bas = V_actuel[1:-1,2:]
 
-    #Utilisation de calculs matricielles derivé en 1
-    V_nouveaux = ((M_Vactuel_Rbas + M_Vactuel_Rhaut + M_Vactuel_Zbas + M_Vactuel_Zhaut) / 4 ) + (h/8) * (M_Vactuel_Rbas + M_Vactuel_Rhaut)
+    #TODO utiliser vraie mathématique avec facteur cylindrique
+    V_nouveaux = ((M_Vactuel_gauche + M_Vactuel_droite + M_Vactuel_haut + M_Vactuel_bas) / 4 ) + (h/8) * (M_Vactuel_gauche + M_Vactuel_droite)
 
     #Écrasement du centre de la matrice
     V_actuel[1:-1,1:-1] = V_nouveaux
@@ -155,27 +157,41 @@ def affichage_de_matrice(Matrice_V, nom_fichier=False, mask_actif=False) :
 
 ###Operations###
 
-Matrice_CF = Construire_Matrice_CF(Matrice_monde)
-mask_CF = ~np.isnan(Matrice_CF)
+temps_necessaire = []
+iterations_necessaire = []
+for j in range(100):
+    start_time = time.time()    #Commence chronomètre
+    Matrice_CF = Construire_Matrice_CF(Matrice_monde)
+    mask_CF = ~np.isnan(Matrice_CF)
 
-V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF)
+    V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF)
 
-Indice_changement = []
-iterations = []
+    Indice_changement = []
+    iterations = []
 
-i=0
-while True:
-    V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF)
-    Indice_changement.append(Indice_changement_i)
-    iterations.append(i)
+    i=0
+    while True:
+        V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF)
+        Indice_changement.append(Indice_changement_i)
+        iterations.append(i)
 
-    if Indice_changement_i == 0 or i > 15000:
-        break
-    i+=1
+        if Indice_changement_i == 0 or i > 15000:
+            break
+        i+=1
 
-### On arrête le temps 
-print("Programme executé en --- %s seconds ---" % (time.time() - start_time))
-print(f"Nombre d'itérations {iterations[-1]}")
+    ### On arrête le temps 
+    temps_necessaire.append(time.time() - start_time)
+    iterations_necessaire.append(i)
+
+###Calculs de temps et d'itération 
+temps_necessaire = np.array(temps_necessaire)
+iterations_necessaire = np.array(iterations_necessaire)
+
+#Valeurs finales
+print(f"Avec l'ordinateur utilisé le temps necessaire est de")
+print(f"{np.average(temps_necessaire)} +- {2*np.std(temps_necessaire)} sec.")
+print(f"Avec l'ordinateur utilisé le nombre d'itérations est de")
+print(f"{np.average(iterations_necessaire)} +- {2*np.std(iterations_necessaire)}")
 
 ###On affiche la figure final
 affichage_de_matrice(V_actuel, nom_fichier="nom_de_figure", mask_actif = True)
