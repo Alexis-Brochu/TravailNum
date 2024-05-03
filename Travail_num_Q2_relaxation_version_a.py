@@ -70,26 +70,18 @@ def Construire_Matrice_CF(Matrice_monde) :
 
     return Matrice_CondF
 
-def maintient_des_CF(V_in, Mactrice_CF):
-    """Cette fonction applique les conditions frontières sur une matrice d'entrée"""
-
-    ###TODO: peut etre plus rapide d'avoir une liste de CF et non matrice entière
-    mask = ~np.isnan(Matrice_CF)
-    V_in[mask] = Mactrice_CF[mask]
-    
-    return V_in
-
-def Initialisation_Vactuel(Matrice_monde, Matrice_CF) :
+def Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF) :
     """Cette fonction crée la première matrice numpy 2D du potentiel actuel,
     Les valeurs de potentiel en tout point est mise"""
 
-    ###Nous commençons à -150 pour acceleré la convergance (PAS CERTAIN SI CA LE FAIT POUR VRAI)
+    ###Commence tout à 0
     V_debut = np.ones_like(Matrice_monde) * 0
-    V_debut = maintient_des_CF(V_debut, Matrice_CF)
+    ###Applique condition frontières
+    V_debut[mask_CF] = Matrice_CF[mask_CF]
 
     return V_debut
 
-def Relaxation_simple(V_actuel, Matrice_CF) :
+def Relaxation_simple(V_actuel, Matrice_CF, mask_CF) :
     """Cette fonction effectue une étape de Relaxation et retourne la nouvelle
     matrice du potentiel actuel et un indice du changements effectuté"""
 
@@ -113,8 +105,8 @@ def Relaxation_simple(V_actuel, Matrice_CF) :
     #Changement de la ligne à r=0 avec l'équation 1b)
     V_actuel[0,1:-1] = 0.5 * (V_actuel[0,0:-2]+V_actuel[0,2:])
 
-    #Replacemnt dans condtions frontières
-    V_actuel = maintient_des_CF(V_actuel, Matrice_CF)
+    #Replacemnt des condtions frontières
+    V_actuel[mask_CF] = Matrice_CF[mask_CF]
 
     Indice_changement = moyenne_init - np.average(V_actuel)
 
@@ -136,60 +128,67 @@ def affichage_de_matrice(Matrice_V, nom_fichier=False, mask_actif=False) :
             except IndexError:
                 break
 
-    fig = plt.figure(figsize=(8, 3))
+    fig = plt.figure(figsize=(8, 2.5))
     ax = fig.add_subplot(111)
 
     #Nous transformons en mm pour une bonne lecture
-    contour = ax.contourf(Z * 1000, R * 1000, Matrice_V, cmap='viridis', levels=101)
+    contour = ax.contourf(Z * 1000, R * 1000, Matrice_V, cmap='viridis', levels=100)
     ax.set_aspect('equal')
 
-    cbar = fig.colorbar(contour, ax=ax, label='Potentiel électrique V [V]', location="left", shrink=0.6)
-    ax.set_xlabel('Position en z (mm)')
-    ax.set_ylabel('Position radiale (mm)')
+    cbar = fig.colorbar(contour, ax=ax, label='Potentiel électrique [V]', location="left", shrink=0.7, pad=0.05)
+    ax.set_xlabel('Position en z [mm]')
+    ax.set_ylabel('Position radiale [mm]')
     ax.grid(True)
 
     #inverse l'axe des z pour pouvoir illustrer comme la figure de l'énoncé
     ax.invert_xaxis()
 
-    
-
     #Positionnement des élements visuelle
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
     cbar.ax.yaxis.set_label_position('left')
+    cbar.set_ticks(np.linspace(0, -300, 7))
 
     plt.subplots_adjust(left=0, right=0.9, top=1, bottom=0, wspace=0.2, hspace=0.2)
 
+    plt.savefig('Potentiel_Relaxation_2_a.png', dpi=600)
     plt.show()
 
 ###Operations###
 
 Matrice_CF = Construire_Matrice_CF(Matrice_monde)
+mask_CF = ~np.isnan(Matrice_CF)
 
-V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF)
+V_actuel = Initialisation_Vactuel(Matrice_monde, Matrice_CF, mask_CF)
 
 Indice_changement = []
 iterations = []
 
 i=0
 while True:
-    V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF)
+    V_actuel, Indice_changement_i = Relaxation_simple(V_actuel, Matrice_CF, mask_CF)
     Indice_changement.append(Indice_changement_i)
     iterations.append(i)
 
-    if Indice_changement_i == 0 or i > 100000:
+    if Indice_changement_i == 0 or i > 15000:
         break
     i+=1
 
+### On arrête le temps 
 print("Programme executé en --- %s seconds ---" % (time.time() - start_time))
 print(f"Nombre d'itérations {iterations[-1]}")
 
+###On affiche la figure final
 affichage_de_matrice(V_actuel, nom_fichier="nom_de_figure", mask_actif = True)
 
+###Affichage de la figure pour c)
+fig = plt.figure(figsize=(8, 3))
+plt.subplots_adjust(left=0.1, right=0.98, top=1, bottom=0.16, wspace=0.2, hspace=0.2)
 plt.plot(
     iterations,Indice_changement
 )
-plt.xlabel("Nombre d'itérations")
-plt.ylabel("Variation de la moyenne de ")
+plt.xlabel("Nombre d'itérations [-]")
+plt.ylabel("Variation de la moyenne [V]")
 plt.yscale("log")
+plt.savefig("Graphique_condition_arret",dpi=600)
 plt.show()
