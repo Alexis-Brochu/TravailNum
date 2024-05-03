@@ -1,6 +1,6 @@
-#Travail numérique ÉlectroMagnétisme H2024
-#William Boissonneault (537 xxx xxx)
-#Alexis Gagné-Brochu (537 xxx xxx)
+#Travail numérique Électromagnétisme H2024
+#William Boissonneault (537 032 683)
+#Alexis Gagné-Brochu (537 163 545)
 #2024-04-26
 
 import numpy as np
