@@ -5,7 +5,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import fonctions_utiles as fu
 import time
 
 
@@ -91,13 +90,13 @@ def Relaxation_simple(V_actuel, Matrice_CF, mask_CF) :
 
     moyenne_init = np.average(V_actuel)
     
-    M_Vactuel_gauche = V_actuel[:-2,1:-1]
-    M_Vactuel_droite = V_actuel[2:,1:-1]
-    M_Vactuel_haut = V_actuel[1:-1,:-2]
-    M_Vactuel_bas = V_actuel[1:-1,2:]
+    M_Vactuel_Rbas = V_actuel[:-2,1:-1]
+    M_Vactuel_Rhaut = V_actuel[2:,1:-1]
+    M_Vactuel_Zbas = V_actuel[1:-1,:-2]
+    M_Vactuel_Zhaut = V_actuel[1:-1,2:]
 
-    #TODO utiliser vraie mathématique avec facteur cylindrique
-    V_nouveaux = ((M_Vactuel_gauche + M_Vactuel_droite + M_Vactuel_haut + M_Vactuel_bas) / 4 ) + (h/8) * (M_Vactuel_gauche + M_Vactuel_droite)
+    #Utilisation de calculs matricielles derivé en 1
+    V_nouveaux = ((M_Vactuel_Rbas + M_Vactuel_Rhaut + M_Vactuel_Zbas + M_Vactuel_Zhaut) / 4 ) + (h/8) * (M_Vactuel_Rbas + M_Vactuel_Rhaut)
 
     #Écrasement du centre de la matrice
     V_actuel[1:-1,1:-1] = V_nouveaux

@@ -193,8 +193,6 @@ print(f"{np.average(temps_necessaire)} +- {2*np.std(temps_necessaire)} sec.")
 print(f"Avec l'ordinateur utilisé le nombre d'itérations est de")
 print(f"{np.average(iterations_necessaire)} +- {2*np.std(iterations_necessaire)}")
 
-
-
 ###On affiche la figure final
 affichage_de_matrice(V_actuel, nom_fichier="nom_de_figure", mask_actif = True)
 
