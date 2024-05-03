@@ -1,0 +1,25 @@
+#Travail numérique ÉlectroMagnétisme H2024
+#William Boissonneault (537 xxx xxx)
+#Alexis Gagné-Brochu (537 xxx xxx)
+#2024-04-26
+
+import numpy as np
+
+#Extraction des matrices sous format .csv
+donnees_matriceR = np.genfromtxt('MatriceR2.csv', delimiter=';')
+donnees_matriceQ = np.genfromtxt('MatriceQ2.csv', delimiter=';')
+donnees_vecteurVr = np.genfromtxt('Vecteur_Vr.csv', delimiter=';')
+
+#Création de la matrice I
+Identite = np.eye(9)
+
+#Calcul du nombre moyen de passages
+Matrice_N = np.linalg.inv(Identite-donnees_matriceQ)
+
+#Calcul de la matrice B
+Matrice_B = np.dot(Matrice_N, donnees_matriceR)
+
+#Calcul de la matrice Vt
+Matrice_Vt = np.dot(Matrice_B, donnees_vecteurVr)
+
+print(donnees_matriceQ)
